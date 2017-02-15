@@ -44,8 +44,8 @@
 		window.isNotEmpty(_opt.url) && Pagination.loadData(_this, _opt.url, _ele);
 	}
 
-	//渲染函数  使用bootstrap的样式
-	Pagination.render = function(){
+	//渲染页码  使用bootstrap的样式
+	Pagination.renderPage = function(){
 		//获取元素
 		var _ele = this;
 		//数据承载元素
@@ -67,13 +67,26 @@
 			}
 			var node = _ele.firstElementChild.firstElementChild;
 			node.insertBefore(tempNode, node.lastElementChild);
+		}
+	}
 
-			//渲染数据
+	//渲染数据
+	Pagination.renderData = function(){
+		//获取元素
+		var _ele = this;
+		//数据承载元素
+		var _target = document.getElementById(_ele.dataset.target);
+		//分页对象
+		var _this = arguments[0];
+
+		//如果页面数已知则添加页码
+		if(_this.pageCount !== 0){
 			//移除以前的内容
-			_target.firstElementChild && _target.removeChild(_target.firstElementChild);
+			if(_target.firstElementChild){
+				_target.removeChild(_target.firstElementChild);
+			}
 			//创建承载数据的列表
 			var ul = document.createElement("ul");
-			_target.appendChild(document.createElement("ul"));
 			//遍历数据
 			_this.pageData.forEach(function(item, index){
 				var li = document.createElement("li");
@@ -109,14 +122,14 @@
 	Pagination.prevPage = Pagination.prototype.prevPage = function(){
 		Pagination.loadPageData.call(this, this.pageNum--);
 		//重新渲染元素
-		Pagination.render.call(arguments[0], this);
+		Pagination.renderData.call(arguments[0], this);
 	}
 
 	//下一页
 	Pagination.nextPage = Pagination.prototype.nextPage = function(){
-		Pagination.loadPageData.call(this, this.pageNum++);
+		Pagination.loadPageData.call(this, ++this.pageNum);
 		//重新渲染元素
-		Pagination.render.call(arguments[0], this);
+		Pagination.renderData.call(arguments[0], this);
 	}
 
 	//加载当前页数据
@@ -125,9 +138,9 @@
 		//当前页数
 		var index = arguments[0] || _this.pageNum;
 		//小于1则再次赋值为1
-		(_this.pageNum < 1) && (_this.pageNum = 1);
+		(index < 1) && (index = _this.pageNum = 1);
 		//大于最后一页页码，则重置为最后一页
-		(_this.pageNum > _this.pageCount) && (_this.pageNum = _this.pageCount);
+		(index > _this.pageCount) && (index = _this.pageNum = _this.pageCount);
 		//为当前页赋值
 		_this.pageData = _this.pageTotaldata.slice((index - 1) * _this.pageSize, index * _this.pageSize);
 	}
@@ -173,7 +186,9 @@
 				//初始化第一页的数据
 				Pagination.loadPageData.call(_this);
 				//渲染元素
-				Pagination.render.call(_ele, _this);
+				Pagination.renderPage.call(_ele, _this);
+				//渲染数据
+				Pagination.renderData.call(_ele, _this);
 				//绑定事件
 				Pagination.bindEvent.call(_ele, _this);
 			}
