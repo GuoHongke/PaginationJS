@@ -1,5 +1,4 @@
-//pagination.js
-(function(window){
+Element.prototype.pagination = (function(){
 	//假分页
 	//分页对象
 	var Pagination = function (element, options){
@@ -22,7 +21,7 @@
 		//页码元素
 		_this.opts.ele = element;
 		//内容元素
-		_this.opts.target = document.getElementById(ele.dataset.target);
+		_this.opts.target = document.getElementById(element.dataset.target);
 		
 		//调用初始化函数
 		Pagination.init.call(_this);
@@ -225,11 +224,10 @@
 
 	function Plugin(options){
 		//创建分页对象
-		new Pagination(ele, options);
+		new Pagination(this, options);
 		//不破坏调用链
 		return this;
 	}
 
-	Element.prototype.pagination = Plugin;
-})(window);
-
+	return Plugin;
+}());
