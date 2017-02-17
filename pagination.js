@@ -1,10 +1,9 @@
 Element.prototype.pagination = (function(){
-	//假分页
 	//分页对象
 	var Pagination = function (element, options){
 		var _this = this;
 		//如果options未传入则使用默认值
-		options = options || Pagination.DEFAULT;
+		options = Pagination.extend(options,Pagination.DEFAULT);
 		//当前页
 		_this.pageNum = options.pageNum;
 		//页面大小
@@ -13,8 +12,10 @@ Element.prototype.pagination = (function(){
 		_this.pageCount = 0;
 		//页面数据
 		_this.pageData = null;
-		//所有数据  若是真分页则和pageData相同
+		//所有数据若是真分页则和pageData相同
 		_this.pageTotaldata = null;
+		//用来判断是真分页还是假分页
+		_this.pageFlag = false;
 
 		//配置项
 		_this.opts = options;
@@ -29,8 +30,13 @@ Element.prototype.pagination = (function(){
 
 	//默认配置
 	Pagination.DEFAULT = {
+		//默认每页10个
 		pageSize : 10,
+		//默认当前页是1
 		pageNum : 1,
+		//默认为假分页
+		pageFlag : false,
+		//默认url为空
 		url : ""
 	}
 	//页码渲染模板
@@ -123,16 +129,30 @@ Element.prototype.pagination = (function(){
 		var _next = _ele.children[0].children[0].lastElementChild;
 
 		_prev.addEventListener("click", function(){
-			_this.prevPage(_ele);
+			_this.prevPage();
 		});
 
 		_next.addEventListener("click", function(){
-			_this.nextPage(_ele);
+			_this.nextPage();
+		});
+
+		//为每个页码元素绑定页面转跳函数
+		Array.prototype.forEach.call(_ele.children[0].children[0].children,function(ele){
+			//如果是第一个获最后一个节点则跳过绑定事件
+			if(ele === _prev || ele === _next){
+				return;
+			}
+			//绑定事件
+			ele.addEventListener("click", function(){
+				console.log(this.textContent);
+				_this.skipToPage(this.textContent);
+			});
 		});
 	}
 
 	//上一页
 	Pagination.prevPage = Pagination.prototype.prevPage = function(){
+		//加载页面数据
 		Pagination.loadPageData.call(this, --this.pageNum);
 		//重新渲染元素
 		Pagination.renderData.call(this);
@@ -140,7 +160,18 @@ Element.prototype.pagination = (function(){
 
 	//下一页
 	Pagination.nextPage = Pagination.prototype.nextPage = function(){
+		//加载页面数据
 		Pagination.loadPageData.call(this, ++this.pageNum);
+		//重新渲染元素
+		Pagination.renderData.call(this);
+	}
+
+	//到指定页面
+	Pagination.skipToPage = Pagination.prototype.skipToPage = function(){
+		//获取要跳转的页码
+		this.pageNum = arguments[0];
+		//加载页面数据
+		Pagination.loadPageData.call(this, this.pageNum);
 		//重新渲染元素
 		Pagination.renderData.call(this);
 	}
@@ -208,6 +239,24 @@ Element.prototype.pagination = (function(){
 				Pagination.bindEvent.call(_this);
 			}
 		});
+	}
+
+	//合并对象
+	Pagination.extend = function(){
+		var options = arguments[0] || {};
+		var defaultOptions = arguments[1] || Pagination.DEFAULT;
+		//遍历默认属性
+		for(name in defaultOptions){
+			//如果不是自有属性则跳过该属性
+			if(!defaultOptions.hasOwnProperty(name)){
+				continue;
+			}
+			//如果name属性不在options中，则添加相应的默认属性
+			if(!(name in options)){
+				options[name] = defaultOptions[name];
+			}
+		}
+		return options;
 	}
 
 	//判断字符串是否为空
