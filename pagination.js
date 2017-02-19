@@ -4,6 +4,8 @@ Element.prototype.pagination = (function(){
 		var _this = this;
 		//如果options未传入则使用默认值
 		options = Pagination.extend(options,Pagination.DEFAULT);
+		//用来判断是真分页还是假分页
+		_this.pageFlag = options.pageFlag;
 		//当前页
 		_this.pageNum = options.pageNum;
 		//页面大小
@@ -14,8 +16,6 @@ Element.prototype.pagination = (function(){
 		_this.pageData = null;
 		//所有数据若是真分页则和pageData相同
 		_this.pageTotaldata = null;
-		//用来判断是真分页还是假分页
-		_this.pageFlag = false;
 
 		//配置项
 		_this.opts = options;
@@ -116,7 +116,6 @@ Element.prototype.pagination = (function(){
 		}
 	}
 
-
 	//绑定事件
 	Pagination.bindEvent = function(){
 		//当前对象
@@ -154,16 +153,12 @@ Element.prototype.pagination = (function(){
 	Pagination.prevPage = Pagination.prototype.prevPage = function(){
 		//加载页面数据
 		Pagination.loadPageData.call(this, --this.pageNum);
-		//重新渲染元素
-		Pagination.renderData.call(this);
 	}
 
 	//下一页
 	Pagination.nextPage = Pagination.prototype.nextPage = function(){
 		//加载页面数据
 		Pagination.loadPageData.call(this, ++this.pageNum);
-		//重新渲染元素
-		Pagination.renderData.call(this);
 	}
 
 	//到指定页面
@@ -172,8 +167,6 @@ Element.prototype.pagination = (function(){
 		this.pageNum = arguments[0];
 		//加载页面数据
 		Pagination.loadPageData.call(this, this.pageNum);
-		//重新渲染元素
-		Pagination.renderData.call(this);
 	}
 
 	//加载当前页数据
@@ -181,16 +174,58 @@ Element.prototype.pagination = (function(){
 		var _this = this;
 		//当前页数
 		var index = arguments[0] || _this.pageNum;
+		//回调函数
+		var callback = function() {
+			//重新渲染元素
+			Pagination.renderData.call(_this);
+		}
+		var data = {
+			pageNum : _this.pageNum,
+			pageSize : _this.pageSize
+		}
 		//小于1则再次赋值为1
-		(index < 1) && (index = _this.pageNum = 1);
+		if(index < 1){
+			index = _this.pageNum = 1;
+		}
 		//大于最后一页页码，则重置为最后一页
-		(index > _this.pageCount) && (index = _this.pageNum = _this.pageCount);
-		//为当前页赋值
-		_this.pageData = _this.pageTotaldata.slice((index - 1) * _this.pageSize, index * _this.pageSize);
+		if(index > _this.pageCount){
+			index = _this.pageNum = _this.pageCount;
+		}
+		//如果是真分页
+		if(_this.pageFlag){
+			Pagination.sendRequest.call(_this, callback, data);
+		}else{
+			//为当前页赋值
+			_this.pageData = _this.pageTotaldata.slice((index - 1) * _this.pageSize, index * _this.pageSize);
+			//重新渲染元素
+			callback();
+		}
 	}
 
 	//从服务器获取数据
 	Pagination.loadData = function(){
+		//当前对象
+		var _this = this;
+		//回调函数
+		var callback = function(){
+			//渲染元素
+			Pagination.renderPage.call(_this);
+			//渲染数据
+			Pagination.renderData.call(_this);
+			//绑定事件
+			Pagination.bindEvent.call(_this);
+		}
+
+		var data = {
+			pageNum : _this.pageNum,
+			pageSize : _this.pageSize
+		}
+
+		Pagination.sendRequest.call(_this, callback, data);
+		
+	}
+
+	Pagination.sendRequest = function(callback, data){
 		//当前对象
 		var _this = this;
 		//要渲染的元素
@@ -217,26 +252,35 @@ Element.prototype.pagination = (function(){
 		//创建request
 		var request = new window.XMLHttpRequest;
 		//向后台请求数据
-		request.open("GET", _url);
-		request.send(null);
+		if(_this.pageFlag){
+			//如果是真分页
+			request.open("POST", _url);
+			request.setRequestHeader("Content-type","application/x-www-form-urlencoded");
+			request.send("pageNum=" + _this.pageNum + "&pageSize=" + _this.pageSize);
+		}else{
+			request.open("GET", _url);
+			request.send(null);
+		}
 		//为request绑定监听函数
 		request.addEventListener("readystatechange",function(){
 			//响应完成
 			if(request.readyState === 4 && request.status === 200){
-				var data = request.responseText;
-				_this.pageTotaldata = JSON.parse(data);
-				//计算总的页数
-				_this.pageCount = Math.ceil(_this.pageTotaldata.length / _this.pageSize);
+				var data = JSON.parse(request.responseText);
+				//如果是真分页
+				if(_this.pageFlag){
+					_this.pageData = _this.pageTotaldata = data.pageData;
+					var rows = data.pageCount || data.pageData.length;
+					_this.pageCount = Math.ceil(rows / _this.pageSize);
+				}else{
+					_this.pageTotaldata = data;
+					//计算总的页数
+					_this.pageCount = Math.ceil(data.length / _this.pageSize);
+				}
+				//打印加载完毕信息
 				console.log("data is loaded from server!");
 
-				//初始化第一页的数据
-				Pagination.loadPageData.call(_this);
-				//渲染元素
-				Pagination.renderPage.call(_this);
-				//渲染数据
-				Pagination.renderData.call(_this);
-				//绑定事件
-				Pagination.bindEvent.call(_this);
+				//调用回调函数
+				callback();
 			}
 		});
 	}
