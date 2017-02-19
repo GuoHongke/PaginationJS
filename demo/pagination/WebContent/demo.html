@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta http-equiv="Cache-Control" content="no-cache">   
+	<title>测试一</title>
+	<link rel="stylesheet" type="text/css" href="pagination.css">
+	<script type="text/javascript" src="pagination.js"></script>
+	<style type="text/css">
+		.wrapper{
+			min-width: 1280px;
+		}
+		.container{
+			width: 1280px;
+		}
+	</style>
+</head>
+<body>
+	<div class="wrapper">
+		<div class="container">
+			<div id="content">
+				<ul class="content-list">
+					<li class="content-item">
+						id:1 name:hello
+					</li>
+				</ul>
+			</div>
+			<div id="pagination">
+				<ul class="page-list clearfix">
+					<li class="page-item">首页</li>
+					<li class="page-item">上一页</li>
+					<li class="page-item">下一页</li>
+					<li class="page-item">尾页</li>
+				</ul>
+			</div>
+		</div>
+	</div>
+	<script type="text/javascript">
+		var options = {
+			pageSize : 4,
+			pageNum : 1,
+			url : "Pagination",
+			pageFlag : false,
+			pageRenderFlag : false
+		}
+		var pagination = document.getElementById("pagination");
+		var content = document.getElementById("content");
+		var paginate = pagination.pagination(options);
+		var pageCount = paginate.getPageCount();
+		var list = pagination.firstElementChild.children;
+		for(var i = 0;i < pageCount; i++){
+			var li = document.createElement("li");
+			li.className = "page-item";
+			li.textContent = i + 1;
+			(function(num){
+				li.addEventListener("click", function(){
+					paginate.skipToPage(num);
+					renderContent(paginate.getPageData());
+				});
+			})(i + 1);	
+			pagination.firstElementChild.insertBefore(li,list[list.length - 2]);
+		}
+		list[0].addEventListener("click", function(){
+			paginate.skipToPage(1);
+			renderContent(paginate.getPageData());
+		});
+		list[1].addEventListener("click", function(){
+			paginate.prevPage();
+			renderContent(paginate.getPageData());
+		});
+		list[list.length - 2].addEventListener("click", function(){
+			paginate.nextPage();
+			renderContent(paginate.getPageData());
+		});
+		list[list.length - 1].addEventListener("click", function(){
+			paginate.skipToPage(pageCount);
+			renderContent(paginate.getPageData());
+		});
+
+		renderContent(paginate.getPageData());
+		
+		function resetClass(list){
+			for(var i = 0; i < list.length;i++){
+				list[i].className = "page-item";
+			}
+		}
+		
+		function renderContent(data){
+			content.firstElementChild.innerHTML = "";
+			for(var i = 0;i < data.length;i++){
+				var li = document.createElement("li");
+				li.textContent = "ID : " + data[i].id + "    姓名 : " + data[i].user;
+				content.firstElementChild.appendChild(li);
+			}
+			resetClass(list);
+			list[paginate.getPageNum() + 1].className = "page-item active";
+		}
+	</script>
+</body>
+</html>
